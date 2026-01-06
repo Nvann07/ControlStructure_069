@@ -1,97 +1,116 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, ttk as msg
 import sqlite3
 
-DB_NAME = 'data_siswa.db'
+DB_NAME = 'db_inventaris.db'
 
-# ---------------- DATABASE ----------------
+
 def setup_db():
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS data_Perangkat_Keras(
+                id_Perangkat INTEGER PRIMARY KEY AUTOINCREMENT,
+                nama_perangkat TEXT NOT NULL,
+                merk TEXT NOT NULL ,
+                kategori TEXT NOT NUL,
+                Tahun_Pembelian INTEGER,
+                          )
+        """)
+
+        cursor.excute("""
+             CREATE TABLE IF NOT EXISTS data_Peminjaman_Perangkat(
+               id_Peminjam INTEGER PRIMARY KEY AUTOINCEREMENT, 
+               nama_Peminjam TEXT NOT NULL,
+               tanggal_peminjaman,
+               nama_perangkat,  
+                      )
+            """)
+        conn.commit()
+        conn.close()
+
+
+def insert_Perangkat(Nama_Perangkat,Merk,Tahun_pembelian,Kategori):
+        try:
+            conn = sqlite3.connect(DB_NAME)
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO Perangkat (nama_perangkat, merk, kategori, Tahun_Pembelian , kategori)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (Nama_Perangkat, Merk, Tahun_pembelian,Kategori))
+            conn.commit()
+        finally:
+            conn.close()
+
+def add_Peminjaman(nama_Peminjam, Tanggal_peminjaman, Nama_Perangkat):
+     try:
+          conn = sqlite3.connect(DB_NAME)
+          cur = conn.cursor()
+          cur.execute("""
+          INSERT INTO Peminjaman (Nama_Peminjam, Tanggal_Peminjaman, Nama_Perangkat)
+          VALUES (?,?,?)
+     
+         """, (nama_Peminjam, Tanggal_peminjaman, Nama_Perangkat)) 
+          conn.commit()
+     finally:
+          conn.close
+
+def fetch_perangkat(search=""):
     conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS nilai_siswa (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nama_siswa TEXT NOT NULL,
-            biologi INTEGER,
-            fisika INTEGER,
-            inggris INTEGER,
-            prediksi_fakultas TEXT
-        )
-    ''')
+    cur = conn.cursor()
+    if search.strip() == "":
+        cur.execute("SELECT id,code,name,price,stock FROM products ORDER BY id DESC")
+    else:
+        like = f"%{search}%"
+        cur.execute("SELECT id,code,name,price,stock FROM products WHERE code LIKE ? OR name LIKE ? ORDER BY id DESC", (like,like))
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+
+def update_perangkat(nama_perangkat, merk, Tahun_Pembelian,Kategori):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute("UPDATE products SET code=?, name=?, price=?, stock=? WHERE id=?", (nama_perangkat,merk,Tahun_Pembelian, Kategori))
     conn.commit()
     conn.close()
 
-# ---------------- LOGIKA PREDIKSI ----------------
-def prediksi_fakultas(biologi, fisika, inggris):
-    nilai = {
-        "Kedokteran": biologi,
-        "Teknik": fisika,
-        "Bahasa": inggris
-    }
-    nilai_tertinggi = max(nilai.values())
-    for fakultas, nilai_prodi in nilai.items():
-        if nilai_prodi == nilai_tertinggi:
-            return fakultas
-    return "Tidak Diketahui"
 
-# ---------------- CRUD DATABASE ----------------
-def insert_data(nama, biologi, fisika, inggris):
-    prediksi = prediksi_fakultas(biologi, fisika, inggris)
-    try:
-        conn = sqlite3.connect(DB_NAME)
+def fetch_all(self):
+        conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO nilai_siswa (nama_siswa, biologi, fisika, inggris, prediksi_fakultas)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (nama, biologi, fisika, inggris, prediksi))
-        conn.commit()
-        return prediksi
-    except sqlite3.Error as e:
-        messagebox.showerror("Error Database", f"Gagal menyimpan data: {e}")
-    finally:
+        cursor.execute("SELECT * data_Perangkat_Keras FROM  ORDER BY Tahun_Pembelian DESC")
+        rows = cursor.fetchall()
         conn.close()
+        return rows
 
-def update_data(id_data, nama, biologi, fisika, inggris):
-    prediksi = prediksi_fakultas(biologi, fisika, inggris)
-    try:
-        conn = sqlite3.connect(DB_NAME)
+def fetch_all(self):
+        conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute('''
-            UPDATE nilai_siswa
-            SET nama_siswa=?, biologi=?, fisika=?, inggris=?, prediksi_fakultas=?
-            WHERE id=?
-        ''', (nama, biologi, fisika, inggris, prediksi, id_data))
-        conn.commit()
-        return prediksi
-    except sqlite3.Error as e:
-        messagebox.showerror("Error Database", f"Gagal memperbarui data: {e}")
-    finally:
+        cursor.execute("SELECT * FROM data_Peminjaman ORDER BY Tanggal_Peminjaman DESC")
+        rows = cursor.fetchall()
         conn.close()
+        return rows
 
-def delete_data(id_data):
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM nilai_siswa WHERE id=?', (id_data,))
-        conn.commit()
-    except sqlite3.Error as e:
-        messagebox.showerror("Error Database", f"Gagal menghapus data: {e}")
-    finally:
-        conn.close()
 
-def fetch_all_data():
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, nama_siswa, biologi, fisika, inggris, prediksi_fakultas FROM nilai_siswa ORDER BY id DESC")
-        return cursor.fetchall()
-    except sqlite3.Error as e:
-        messagebox.showerror("Error Database", f"Gagal mengambil data: {e}")
-        return []
-    finally:
-        conn.close()
 
-# ---------------- GUI ----------------
+
+#=== Perngkat Management ===== 
+     
+def insert_Perangkat(self):
+     d = insert_Perangkat(self.root, "Tambah Perangkat")
+     if d.result:
+      code,name,price,stock = d.result
+      try:
+       insert_Perangkat(code,name,float(price),int(stock))
+       msg.showinfo("OK", "Perangkat Ditambahakan")
+       self.load_products()
+      except Exception as e:
+       msg.showerror("Error", str(e))
+
+
+
+     
 def load_data_to_table():
     for item in tree.get_children():
         tree.delete(item)
@@ -141,22 +160,22 @@ def edit_data():
 
     win_n.title("Edit Data Siswa")
 
-    tk.Label(win_n, text="Nama Siswa:").grid(row=0, column=0, pady=5, sticky='w')
+    tk.Label(win_n, text="Nama Perangkat:").grid(row=0, column=0, pady=5, sticky='w')
     edit_nama = tk.Entry(win_n)
     edit_nama.grid(row=0, column=1, pady=5)
     edit_nama.insert(0, data[1])
 
-    tk.Label(win_n, text="Biologi:").grid(row=1, column=0, pady=5, sticky='w')
+    tk.Label(win_n, text="kategori:").grid(row=1, column=0, pady=5, sticky='w')
     edit_bio = tk.Entry(win_n)
     edit_bio.grid(row=1, column=1, pady=5)
     edit_bio.insert(0, data[2])
 
-    tk.Label(win_n, text="Fisika:").grid(row=2, column=0, pady=5, sticky='w')
+    tk.Label(win_n, text="Merk:").grid(row=2, column=0, pady=5, sticky='w')
     edit_fis = tk.Entry(win_n)
     edit_fis.grid(row=2, column=1, pady=5)
     edit_fis.insert(0, data[3])
 
-    tk.Label(win_n, text="Inggris:").grid(row=3, column=0, pady=5, sticky='w')
+    tk.Label(win_n, text=":").grid(row=3, column=0, pady=5, sticky='w')
     edit_ing = tk.Entry(win_n)
     edit_ing.grid(row=3, column=1, pady=5)
     edit_ing.insert(0, data[4])
@@ -246,3 +265,8 @@ tree.pack(fill='both', expand=True)
 
 load_data_to_table()
 root.mainloop()
+
+
+
+
+
